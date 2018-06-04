@@ -4,17 +4,19 @@
 #include <time.h>
 using namespace std;
 #define fitnessmax 56
-#define mutation_rate 100
-#define pop_limit 20
+#define mutation_rate 70
+#define pop_limit 100
 
 class Board{
     public:
+        // variables
         int fitness;
-        Board();
-        void start();
-        int collisions(int size);
         int* queens;
-        void print();
+        // methods
+        Board(int size);
+        void print(int size);
+        void start(int size);
+        int collisions(int size);
 };
 
 class Population{
@@ -23,8 +25,9 @@ class Population{
         int count;
         list<int*> winners;
         Board* pop;
-        //methods
-        Population(int x);
+        int size;
+        // methods
+        Population(int x, int size);
         int fitness();
         int truncate_selection(int divider);
         void selection(int total_fitness);
@@ -35,25 +38,25 @@ class Population{
 // ###########################################################################
 
 
-void mutate(Board& child)
+void mutate(Board& child, int size)
 {
-    *(child.queens + rand() % 8) = rand() % 8;
+    *(child.queens + rand() % size) = rand() % size;
 }
 
 
-void cross(Board parent1, Board parent2, Board& child1, Board& child2)
+void cross(Board parent1, Board parent2, Board& child1, Board& child2, int size)
 {
-    child1 = Board();
-    child2 = Board();
+    child1 = Board(size);
+    child2 = Board(size);
 
-    int cut = rand() % 8;
+    int cut = rand() % size;
 
     for (int i = 0; i < cut; i++)
     {
         *(child1.queens + i) = *(parent1.queens + i);
         *(child2.queens + i) = *(parent2.queens + i);
     }
-    for (int i = cut + 1; i < 8; i++)
+    for (int i = cut + 1; i < size; i++)
     {
         *(child1.queens + i) = *(parent2.queens + i);
         *(child2.queens + i) = *(parent1.queens + i);
@@ -61,11 +64,11 @@ void cross(Board parent1, Board parent2, Board& child1, Board& child2)
 
     if (rand() % 100 < mutation_rate)
     {
-        mutate(child1);
+        mutate(child1, size);
     }
     if (rand() % 100 < mutation_rate)
     {
-        mutate(child2);
+        mutate(child2, size);
     }
 }
 
@@ -108,28 +111,28 @@ void quicksort(Board* arr, int left, int right)
 // ###########################################################################
 
 
-void Board::print()
+void Board::print(int size)
 {
     cout << " { ";
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < size; i++)
     {
         cout << *(queens + i) << "-";
     }
     cout << " fitness : " << fitness;
 }
 
-Board::Board() //called for child
+Board::Board(int size) //called for child
 {
     fitness = 0;
-    queens = (int*)(calloc(sizeof(int), 8));
+    queens = (int*)(calloc(sizeof(int), size));
 }
 
-void Board::start()
+void Board::start(int size)
 {
     fitness = 0;
-    for(int i = 0; i < 8; i++)
+    for(int i = 0; i < size; i++)
     {
-        *(queens + i) = (rand() % 8);
+        *(queens + i) = (rand() % size);
     }
 }
 
@@ -162,14 +165,16 @@ int Board::collisions(int size)
 
 
 
-Population::Population(int x) : count(x)
+Population::Population(int pop_max, int size_board)
 {
+    size = size_board;
+    count = pop_max;
     winners = list<int*>();
     pop = (Board*)malloc(sizeof(Board) * count);
     for(int i = 0; i < count; i++)
     {
-        Board b;
-        b.start();
+        Board b = Board(size_board);
+        b.start(size_board);
         *(pop + i) = b;
     }
 }
@@ -179,7 +184,7 @@ void Population::print()
     cout << "population of " << count << " boards --" <<endl;
     for (int i = 0; i < count; i++)
     {
-        (pop + i)->print();
+        (pop + i)->print(size);
         cout << " <- " << i << endl;
     }
     cout << endl;
@@ -225,8 +230,8 @@ void Population::breed()
     Board* newpop = (Board*)(malloc(sizeof(Board) * pop_limit));
     int a = 0;
     int b = 0;
-    Board child1;
-    Board child2;
+    Board child1 = Board(size);
+    Board child2 = Board(size);
 
     for(int i = 0; i < pop_limit-1; i+=2)
     {
@@ -237,7 +242,7 @@ void Population::breed()
         }
         while (b != a);
 
-        cross(*(pop + a), *(pop + b), child1, child2);
+        cross(*(pop + a), *(pop + b), child1, child2, size);
 
         *(newpop + i) = child1;
         *(newpop + i + 1) = child2;
@@ -254,16 +259,16 @@ int Population::fitness()
 
     for (int i = 0; i < count; i++)
     {
-        coll = (pop + i)->collisions(8);
+        coll = (pop + i)->collisions(size);
         if (coll == 0)
         {
-            int* temp = (int*)(malloc(sizeof(int) * 8));
-            for (int j = 0; j < 8; j++)
+            int* temp = (int*)(malloc(sizeof(int) * size));
+            for (int j = 0; j < size; j++)
             {
                 *(temp+j) = *((pop + i)->queens + j);
             }
 //
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < size; i++)
                 cout << *(temp + i) << " |";
             cout << endl;
 //
@@ -293,13 +298,14 @@ int Population::fitness()
 
 int main()
 {
+    int size = 8;
     srand(time(NULL));
     //srand(time(0));
-    Population p = Population(pop_limit);
+    Population p = Population(pop_limit, size);
 
     int iterator = 0;
 
-    while ( p.winners.size() < 92)
+    while ( p.winners.size() < 96)
     {
         //cout << iterator++ << endl;
         //p.print();

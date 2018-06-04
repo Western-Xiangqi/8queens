@@ -32,10 +32,12 @@ int main (){
     srand(time(NULL));
     int size = 9;
     int* board = (int*)(calloc(sizeof(int), size));
-    while (true){
+    int Wcount = 0;
+    while (Wcount < 50){
         for (int i = 0; i < size; i++)
             board[i] = rand() % size;
         if (collisions(board, size)){
+            Wcount++;
             for (int i = 0; i < size; i++)
                 cout << board[i] << "| ";
             cout << endl;
