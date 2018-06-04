@@ -12,7 +12,7 @@ class Board{
         int fitness;
         Board();
         void start();
-        int collisions();
+        int collisions(int size);
         int* queens;
         void print();
 };
@@ -133,40 +133,28 @@ void Board::start()
     }
 }
 
-int Board::collisions()
+int Board::collisions(int size)
 {
-    int coll = 0;
-    int lines_coll[8] = {0};
-    int dx;
-    int dy;
+    int* lines = (int*)(calloc(sizeof(int), size));
+    int* diagTB = (int*)(calloc(sizeof(int), size*2 -1));
+    int* diagBT = (int*)(calloc(sizeof(int), size*2 -1));
+    int colli = 0;
 
-    for (int i = 0; i < 8; i++)
-    {
-        lines_coll[*(queens + i)]++;
-
-        for (int j = 0; j < 8; j++)
-        {
-            if (i != j)
-            {
-                dx = abs(i-j);
-                dy = abs(*(queens + i) - *(queens + j));
-                if (dx == dy)
-                {
-                    coll++;
-                    //  cout << "collision: " << i << " : " << j << endl;
-                }
-
-            }
-        }
-
+    for (int i = 0; i < size; i++){
+        lines[queens[i]]++;
+        diagTB[i-queens[i] + size-1]++;
+        diagBT[queens[i]+i]++;
     }
 
-    for (int i = 0; i < 8; i++)
-    {
-        // cout << "collisions on line " << i << ": " << lines_coll[i] * (lines_coll[i] - 1) << endl;
-        coll += lines_coll[i] * (lines_coll[i] - 1);
+    for (int i = 0; i < size; i++)
+        colli += lines[i] * (lines[i] - 1);
+
+    for (int i = 0; i < size*2 -1; i++){
+        colli += diagTB[i] * (diagTB[i] - 1);
+        colli += diagBT[i] * (diagBT[i] - 1);
     }
-    return coll;
+
+    return colli;
 }
 
 
@@ -266,7 +254,7 @@ int Population::fitness()
 
     for (int i = 0; i < count; i++)
     {
-        coll = (pop + i)->collisions();
+        coll = (pop + i)->collisions(8);
         if (coll == 0)
         {
             int* temp = (int*)(malloc(sizeof(int) * 8));
@@ -311,7 +299,7 @@ int main()
 
     int iterator = 0;
 
-    while ( p.winners.size() < 20)
+    while ( p.winners.size() < 92)
     {
         //cout << iterator++ << endl;
         //p.print();
